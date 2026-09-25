@@ -49,7 +49,11 @@ async def password(request: Request, call_next):
             given = ""
         if not secrets.compare_digest(given, expected):
             return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="Tirgum"'})
-    return await call_next(request)
+    response = await call_next(request)
+    if not request.url.path.startswith(("/api/", "/s/")):
+        # The UI files change with updates: make browsers check for a new version every time.
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 # ------------------------------------------------------------------------- jobs
