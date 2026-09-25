@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{TITLE}}</title>
+<style>
+  :root { --bg: #f6f4f0; --ink: #1d1b19; --muted: #6f6a63; --accent: #e8573c; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #141312; --ink: #efece6; --muted: #a19b92; --accent: #f06a4e; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+         display: grid; place-items: center; padding: 24px 16px; }
+  main { width: min(1000px, 100%); display: grid; gap: 14px; }
+  h1 { font-size: 20px; margin: 0; unicode-bidi: plaintext; }
+  video { width: 100%; border-radius: 14px; background: #000; max-height: 78vh; }
+  footer { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .mark { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px;
+          background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 dir="auto">{{TITLE}}</h1>
+  <video controls playsinline preload="metadata" src="/s/{{TOKEN}}/video.mp4"></video>
+  <footer><span class="mark" aria-hidden="true">ת</span> English subtitles by Tirgum</footer>
+</main>
+</body>
+</html>

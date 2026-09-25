@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tirgum</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8573c'/%3E%3Ctext x='16' y='23' font-size='19' font-family='Arial' font-weight='700' text-anchor='middle' fill='white'%3E%D7%AA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">ת</span>
+    <div>
+      <div class="name">Tirgum</div>
+      <div class="tag">Hebrew videos, English subtitles</div>
+    </div>
+  </div>
+  <button class="icon-btn" id="openSettings" aria-label="Settings" title="Settings">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+  </button>
+</header>
+
+<main>
+  <section class="panel new" aria-labelledby="newTitle">
+    <h1 id="newTitle">Translate a video</h1>
+    <form id="urlForm" class="url-row" autocomplete="off">
+      <input id="url" type="url" inputmode="url" placeholder="Paste a YouTube link…" aria-label="YouTube link" required>
+      <button type="button" class="ghost" id="pasteBtn">Paste</button>
+    </form>
+    <p class="hint" id="urlHint">Tirgum downloads the video, reads the Hebrew, and burns English subtitles over it.</p>
+
+    <div id="estimate" class="estimate" hidden></div>
+    <div id="job" class="job" hidden aria-live="polite"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="browseTitle">
+    <div class="lib-head">
+      <h2 id="browseTitle">Browse Kan 11</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-kind="videos" aria-selected="true">Latest</button>
+        <button class="tab" role="tab" data-kind="playlists" aria-selected="false">Playlists</button>
+      </div>
+    </div>
+    <div id="browseCrumb" class="crumb" hidden></div>
+    <div id="browse" class="grid small"><div class="empty">Loading…</div></div>
+  </section>
+
+  <section class="panel" aria-labelledby="libTitle">
+    <div class="lib-head">
+      <h2 id="libTitle">Library</h2>
+      <input id="libSearch" type="search" placeholder="Search" aria-label="Search the library">
+    </div>
+    <div id="library" class="grid"></div>
+  </section>
+</main>
+
+<dialog id="settings" class="modal">
+  <form method="dialog" id="settingsForm">
+    <header><h2>Settings</h2><button class="icon-btn" value="close" aria-label="Close">✕</button></header>
+    <p class="hint">Keys are stored in the <code>.env</code> file on the machine running Tirgum and are never shown again in full. Leave a field empty to keep the current key.</p>
+    <label>Anthropic API key <span class="status" data-for="anthropic"></span>
+      <input name="anthropic" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
+    <label>Gemini API key <span class="status" data-for="gemini"></span>
+      <input name="gemini" type="password" placeholder="Google AI Studio key" autocomplete="off"></label>
+    <label>RunPod API key <span class="status" data-for="runpod"></span>
+      <input name="runpod" type="password" placeholder="rpa_…" autocomplete="off"></label>
+    <label>RunPod endpoint ID <span class="status" data-for="runpod_endpoint"></span>
+      <input name="runpod_endpoint" type="text" placeholder="created by tirgum --setup-runpod" autocomplete="off"></label>
+    <div class="test-results" id="testResults"></div>
+    <footer>
+      <button type="button" class="ghost" id="testKeys">Test keys</button>
+      <button type="submit" class="primary" value="save" id="saveSettings">Save</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="viewer" class="modal wide">
+  <div id="viewerBody"></div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Translation Review</title>
+<style>
+:root{
+  --bg:#f7f6f3;--fg:#1c1c1a;--muted:#6b6b66;--line:#e2e0da;--card:#fff;--soft:#f1efea;
+  --ok:#3f7d20;--okbg:#e8f3df;--okline:#9cc97f;--warn:#b45309;--warnbg:#fdf0e1;
+  --accent:#1f5fbf;--accentbg:#e6eefb;--focus:#1f5fbf;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#151513;--fg:#ecebe6;--muted:#9c9b94;--line:#2d2c29;--card:#1d1c1a;--soft:#252421;
+  --ok:#9bd46f;--okbg:#1f2c16;--okline:#4d7a30;--warn:#f59e4b;--warnbg:#35230f;
+  --accent:#7fb0ff;--accentbg:#172338;--focus:#7fb0ff;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif}
+button,textarea,input{font:inherit;color:inherit}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:20px;max-width:1500px;margin:0 auto;padding:20px 16px 80px}
+header{grid-column:1/-1}
+h1{font-size:20px;margin:0 0 2px}
+.sub{color:var(--muted);margin:0 0 12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.progress{flex:1;min-width:180px;height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+input[type=search]{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;min-width:200px}
+details.rules{margin:12px 0 0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+details.rules summary{cursor:pointer;font-weight:600}
+details.rules textarea{width:100%;min-height:90px;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);resize:vertical}
+.hint{color:var(--muted);font-size:12px}
+.player{position:sticky;top:16px;align-self:start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.player video{width:100%;border-radius:8px;background:#000;display:block}
+.player .ctl{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.player .now{margin-top:6px;font-size:13px;color:var(--muted);min-height:1.4em}
+.keys{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.7}
+kbd{font:11px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--soft)}
+.row{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:10px 12px;scroll-margin:90px}
+.row.focus{outline:2px solid var(--focus);outline-offset:1px}
+.row.done{border-color:var(--okline)}
+.top{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.play{border:0;background:var(--accentbg);color:var(--accent);border-radius:8px;padding:5px 10px;cursor:pointer;font-weight:600}
+.time{font-variant-numeric:tabular-nums;color:var(--muted)}
+.status{margin-left:auto;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px}
+.status.ok{color:var(--ok);background:var(--okbg)}
+.status.todo{color:var(--muted);background:var(--soft)}
+.diffnote{font-size:12px;color:var(--warn);background:var(--warnbg);padding:2px 8px;border-radius:6px}
+.he{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.he div{white-space:pre-line;direction:rtl;text-align:right;font-size:15px;background:var(--soft);border-radius:8px;padding:6px 9px}
+.capimg{display:block;width:100%;border-radius:6px;background:#000}
+.lbl{display:block;direction:ltr;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:1px}
+.cands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cand{white-space:pre-line;position:relative;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:9px;padding:7px 9px 7px 30px;cursor:pointer;min-height:52px}
+.cand:hover{border-color:var(--muted)}
+.cand::before{content:"";position:absolute;left:9px;top:10px;width:14px;height:14px;border:1.5px solid var(--muted);border-radius:4px}
+.cand[aria-pressed=true]{border-color:var(--ok);background:var(--okbg)}
+.cand[aria-pressed=true]::before{background:var(--ok);border-color:var(--ok);box-shadow:inset 0 0 0 2px var(--okbg)}
+.cand .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block}
+.fix{margin-top:8px;display:flex;gap:8px;align-items:flex-start}
+.fix button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.fix textarea{flex:1;border:1.5px solid var(--ok);border-radius:8px;padding:6px 9px;background:var(--card);min-height:38px;resize:vertical}
+.saved{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:6px 14px;border-radius:99px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.saved.show{opacity:1}
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr}
+  .player{order:-1;top:0;z-index:2;border-radius:0 0 12px 12px}
+  .keys{display:none}
+}
+@media (max-width:640px){.he,.cands{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <header>
+    <h1>Translation review</h1>
+    <p class="sub" id="title">Loading…</p>
+    <div class="bar">
+      <span id="count" class="hint"></span>
+      <div class="progress"><i id="prog"></i></div>
+    </div>
+    <div class="bar" style="margin-top:10px" id="chips"></div>
+    <details class="rules">
+      <summary>Translation rules</summary>
+      <p class="hint">General instructions the translator follows on every future video, e.g. "Keep 'wallah' as 'wallah'" or "Spell the host's name Matan Halak". Saved automatically.</p>
+      <textarea id="rules" placeholder="One rule per line"></textarea>
+    </details>
+  </header>
+
+  <main id="list"></main>
+
+  <aside class="player">
+    <video id="vid" src="/media" preload="metadata" playsinline></video>
+    <div class="ctl">
+      <button class="chip" id="replay">▶ Play line</button>
+      <button class="chip" id="rate" aria-pressed="false">Slow 0.75×</button>
+      <button class="chip" id="ctx" aria-pressed="false">+2s context</button>
+    </div>
+    <div class="now" id="now"></div>
+    <div class="keys">
+      <kbd>J</kbd>/<kbd>K</kbd> next / previous line (plays it) · <kbd>Space</kbd> replay<br>
+      <kbd>1</kbd> final · <kbd>2</kbd> voice · <kbd>3</kbd> image — toggle accurate<br>
+      <kbd>E</kbd> write the correct translation · <kbd>Esc</kbd> leave text box
+    </div>
+  </aside>
+</div>
+<div class="saved" id="saved">Saved</div>
+
+<script>
+const CANDS = [["final","Final (in video)"],["voice","Voice only"],["image","Image only"]];
+let rows = [], labels = {}, filter = "todo", q = "", focusIdx = 0, stopAt = null;
+const $ = id => document.getElementById(id);
+const vid = $("vid");
+try { filter = localStorage.getItem("review-filter") || filter; } catch (e) {}
+
+const esc = t => (t || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const isDone = i => { const l = labels[i]; return !!(l && ((l.accurate && l.accurate.length) || l.corrected)); };
+
+const FILTERS = [
+  ["todo", "To review", r => !isDone(r.i)],
+  ["done", "Reviewed", r => isDone(r.i)],
+  ["diff", "Voice ≠ image", r => r.verdict === "different" || r.verdict === "nuance"],
+  ["all", "All", () => true],
+];
+
+function flash(msg) { const s = $("saved"); s.textContent = msg; s.classList.add("show"); clearTimeout(flash.t); flash.t = setTimeout(() => s.classList.remove("show"), 900); }
+
+async function save(i) {
+  const l = labels[i] || {accurate: [], corrected: ""};
+  try {
+    const r = await fetch("/api/label", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({i, accurate: l.accurate || [], corrected: l.corrected || ""})});
+    flash(r.ok ? "Saved" : "Save failed");
+  } catch (e) { flash("Save failed — is the tool still running?"); }
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = rows.filter(r => isDone(r.i)).length;
+  $("count").textContent = `${done} of ${rows.length} lines reviewed`;
+  $("prog").style.width = (rows.length ? done / rows.length * 100 : 0) + "%";
+}
+
+function renderChips() {
+  const box = $("chips"); box.innerHTML = "";
+  FILTERS.forEach(([k, label, fn]) => {
+    if (k === "diff" && !rows.some(fn)) return;  // only when comparison data exists
+    const b = document.createElement("button");
+    b.className = "chip"; b.setAttribute("aria-pressed", k === filter);
+    b.textContent = `${label} ${rows.filter(fn).length}`;
+    b.onclick = () => { filter = k; try { localStorage.setItem("review-filter", k); } catch (e) {} renderChips(); renderList(); };
+    box.appendChild(b);
+  });
+  const s = document.createElement("input"); s.type = "search"; s.placeholder = "Search…"; s.value = q;
+  s.oninput = () => { q = s.value.toLowerCase(); renderList(); };
+  box.appendChild(s);
+}
+
+function visible() {
+  const fn = FILTERS.find(f => f[0] === filter)[2];
+  return rows.filter(r => fn(r) && (!q || JSON.stringify([r.he_speech, r.he_caption, r.candidates]).toLowerCase().includes(q)));
+}
+
+function rowHTML(r) {
+  const l = labels[r.i] || {};
+  const acc = l.accurate || [];
+  const cands = CANDS.filter(([k]) => r.candidates[k]).map(([k, name], n) =>
+    `<button class="cand" data-k="${k}" aria-pressed="${acc.includes(k)}" title="Key ${CANDS.findIndex(c => c[0] === k) + 1}">
+       <span class="k">${name}</span>${esc(r.candidates[k])}</button>`).join("");
+  const done = isDone(r.i);
+  const fixOpen = !!l.corrected;
+  return `<div class="row${done ? " done" : ""}" id="r${r.i}" data-i="${r.i}">
+    <div class="top">
+      <button class="play" title="Play this line">▶</button>
+      <span class="time">${r.t}</span>
+      ${r.verdict === "different" ? `<span class="diffnote" title="${esc(r.note)}">voice ≠ image</span>` : ""}
+      <span class="status ${done ? "ok" : "todo"}">${l.corrected ? "Corrected" : done ? "Reviewed" : "To review"}</span>
+    </div>
+    <div class="he">
+      <div><span class="lbl">Hebrew · speech</span>${esc(r.he_speech)}</div>
+      <div><span class="lbl">Hebrew · on-screen caption</span>${r.he_caption_img ? `<img class="capimg" src="${r.he_caption_img}" alt="Hebrew caption" loading="lazy">` : esc(r.he_caption) || "<i>—</i>"}</div>
+    </div>
+    <div class="cands">${cands}</div>
+    <div class="fix">
+      <button class="fixbtn">${fixOpen ? "Correct translation:" : "None is right — write the correct one"}</button>
+      ${fixOpen ? `<textarea class="fixtext" placeholder="Correct English translation">${esc(l.corrected)}</textarea>` : ""}
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const list = visible();
+  $("list").innerHTML = list.map(rowHTML).join("") || `<p class="hint">Nothing here${filter === "todo" ? " — every line is reviewed 🎉" : ""}.</p>`;
+  if (!list.find(r => r.i === focusIdx) && list.length) focusIdx = list[0].i;
+  setFocus(focusIdx, false);
+}
+
+function refreshRow(i) {
+  const el = $("r" + i); if (!el) return;
+  const tmp = document.createElement("div"); tmp.innerHTML = rowHTML(rows[i]);
+  el.replaceWith(tmp.firstElementChild);
+  setFocus(i, false);
+  renderChips();
+}
+
+function setFocus(i, scroll = true) {
+  document.querySelectorAll(".row.focus").forEach(e => e.classList.remove("focus"));
+  const el = $("r" + i); if (!el) return;
+  focusIdx = i; el.classList.add("focus");
+  if (scroll) el.scrollIntoView({block: "nearest", behavior: "smooth"});
+}
+
+function play(i) {
+  const r = rows[i]; if (!r) return;
+  const pad = $("ctx").getAttribute("aria-pressed") === "true" ? 2 : 0.3;
+  vid.currentTime = Math.max(0, r.start - pad);
+  stopAt = r.end + pad;
+  vid.playbackRate = $("rate").getAttribute("aria-pressed") === "true" ? 0.75 : 1;
+  vid.play().catch(() => {});
+  $("now").textContent = `Line at ${r.t}`;
+  setFocus(i);
+}
+vid.addEventListener("timeupdate", () => { if (stopAt !== null && vid.currentTime >= stopAt) { vid.pause(); stopAt = null; } });
+vid.addEventListener("seeking", () => { if (!vid.paused && stopAt === null) return; });
+
+function toggle(i, k) {
+  const l = labels[i] = labels[i] || {accurate: [], corrected: ""};
+  l.accurate = l.accurate || [];
+  l.accurate = l.accurate.includes(k) ? l.accurate.filter(x => x !== k) : [...l.accurate, k];
+  refreshRow(i); save(i); updateProgress();
+}
+
+function openFix(i) {
+  const l = labels[i] = labels[i] || {accurate: [], corrected: ""};
+  if (!l.corrected) l.corrected = rows[i].candidates.final || rows[i].candidates.voice || "";
+  refreshRow(i);
+  const ta = document.querySelector(`#r${i} .fixtext`); if (ta) { ta.focus(); ta.select(); }
+  save(i);
+}
+
+$("list").addEventListener("click", e => {
+  const row = e.target.closest(".row"); if (!row) return;
+  const i = +row.dataset.i;
+  if (e.target.closest(".play")) return play(i);
+  const cand = e.target.closest(".cand"); if (cand) return toggle(i, cand.dataset.k);
+  if (e.target.closest(".fixbtn")) {
+    const l = labels[i];
+    if (l && l.corrected) { l.corrected = ""; refreshRow(i); save(i); } else openFix(i);
+    return;
+  }
+  if (!e.target.closest("textarea")) setFocus(i, false);
+});
+$("list").addEventListener("change", e => {
+  if (!e.target.classList.contains("fixtext")) return;
+  const i = +e.target.closest(".row").dataset.i;
+  labels[i] = labels[i] || {accurate: []};
+  labels[i].corrected = e.target.value.trim();
+  save(i); refreshRow(i);
+});
+
+["rate", "ctx"].forEach(id => $(id).onclick = () => {
+  const b = $(id); b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
+  if (id === "rate") vid.playbackRate = b.getAttribute("aria-pressed") === "true" ? 0.75 : 1;
+});
+$("replay").onclick = () => play(focusIdx);
+
+let rulesTimer;
+$("rules").addEventListener("input", () => {
+  clearTimeout(rulesTimer);
+  rulesTimer = setTimeout(async () => {
+    try { await fetch("/api/rules", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({rules: $("rules").value})}); flash("Rules saved"); }
+    catch (e) { flash("Save failed"); }
+  }, 600);
+});
+
+document.addEventListener("keydown", e => {
+  if (e.target.matches("textarea,input")) { if (e.key === "Escape") e.target.blur(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const list = visible(); const pos = list.findIndex(r => r.i === focusIdx);
+  if (e.key === "j" || e.key === "k") {
+    const next = list[Math.min(list.length - 1, Math.max(0, pos + (e.key === "j" ? 1 : -1)))];
+    if (next) play(next.i);
+  } else if (e.key === " ") { e.preventDefault(); play(focusIdx); }
+  else if (["1", "2", "3"].includes(e.key)) { const k = CANDS[+e.key - 1][0]; if (rows[focusIdx]?.candidates[k]) toggle(focusIdx, k); }
+  else if (e.key === "e") { e.preventDefault(); openFix(focusIdx); }
+});
+
+fetch("/api/data").then(r => r.json()).then(d => {
+  rows = d.rows; labels = {};
+  Object.entries(d.labels || {}).forEach(([k, v]) => labels[+k] = {accurate: v.accurate || [], corrected: v.corrected || ""});
+  $("title").textContent = d.title;
+  $("rules").value = d.rules || "";
+  renderChips(); renderList(); updateProgress();
+}).catch(() => { $("title").textContent = "Couldn't load data — start it with: uv run yt-translate --review <video folder>"; });
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# On ronbox:  docker compose up -d --build
+# Like the other apps there, Tirgum publishes no ports: it joins the proxy's network and
+# Nginx Proxy Manager (with Authelia in front) serves it at tirgum.ronbox.me -> http://tirgum:8420.
+services:
+  tirgum:
+    build: .
+    container_name: tirgum
+    restart: unless-stopped
+    volumes:
+      - ./data:/data            # downloads/, .env (API keys), feedback/
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: seedbox-stack_default
+    external: true

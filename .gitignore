@@ -1,0 +1,15 @@
+# Private / local data: never commit
+.env
+data/
+downloads/
+feedback/
+shares.json
+*.log
+
+# Local tooling
+.venv/
+__pycache__/
+*.egg-info/
+.claude/
+.python-version
+.DS_Store
