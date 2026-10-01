@@ -11,6 +11,26 @@ const money = (v) => v == null ? "—" : `$${v < 0.1 ? Number(v).toFixed(3) : Nu
 const tokens = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n ?? 0);
 const clock = (sec) => { sec = Math.max(0, Math.round(sec || 0)); const m = Math.floor(sec / 60), s = sec % 60; return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : m ? `${m}m ${String(s).padStart(2, "0")}s` : `${s}s`; };
 const length = (sec) => sec ? clock(sec).replace(/ \d+s$/, "") : "";
+const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+/** YouTube-style: Today, Yesterday, N days ago, then short date. */
+const ytDate = (value) => {
+  if (value == null || value === "") return "";
+  let d;
+  if (typeof value === "number") d = new Date(value < 1e12 ? value * 1000 : value);
+  else if (/^\d{8}$/.test(String(value))) {
+    const s = String(value);
+    d = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+  } else d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const days = Math.round((dayStart(now) - dayStart(d)) / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days > 1 && days < 7) return `${days} days ago`;
+  const opts = { month: "short", day: "numeric" };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString(undefined, opts);
+};
 const isYouTube = (u) => /^(https?:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(u.trim());
 const pref = (k, d) => { try { return localStorage.getItem("tirgum-" + k) ?? d; } catch { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem("tirgum-" + k, v); } catch {} };
@@ -202,7 +222,7 @@ function renderLibrary() {
   const q = $("libSearch").value.trim().toLowerCase();
   const items = library.filter((r) => !q || (r.title || "").toLowerCase().includes(q));
   $("library").innerHTML = items.map((r) => {
-    const date = r.started ? new Date(r.started).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "";
+    const date = ytDate(r.finished || r.started);
     const cost = r.cost?.total ?? null;
     const badge = r.status && r.status !== "done" ? `<span class="badge ${esc(r.status)}">${esc(r.status)}</span>` : "";
     return `<button class="card" data-id="${esc(r.id)}">
@@ -222,7 +242,7 @@ function openViewer(id) {
   $("viewerBody").innerHTML = `
     <header style="display:flex;justify-content:space-between;gap:12px;align-items:start">
       <div><div class="video-title" dir="auto">${esc(r.title)}</div>
-        <div class="video-meta">${[length(r.duration), r.translate_model, r.seconds ? `took ${clock(r.seconds)}` : ""].filter(Boolean).join(" · ")}</div></div>
+        <div class="video-meta">${[ytDate(r.finished || r.started), length(r.duration), r.translate_model, r.seconds ? `took ${clock(r.seconds)}` : ""].filter(Boolean).join(" · ")}</div></div>
       <button class="icon-btn" id="closeViewer" aria-label="Close">✕</button>
     </header>
     ${video ? `<video controls preload="metadata" src="/api/library/${encodeURIComponent(r.id)}/${video}"></video>` : `<div class="notice">No rendered video in this folder.</div>`}
@@ -304,7 +324,7 @@ async function loadBrowse() {
            <img src="${esc(it.thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer">
            <div class="body">${it.in_library ? `<span class="badge done">In library</span>` : ""}
            <div class="t" dir="auto">${esc(it.title)}</div>
-           <div class="m">${length(it.duration) || ""}</div></div></button>`).join("")
+           <div class="m">${[ytDate(it.upload_date || it.timestamp), length(it.duration)].filter(Boolean).join(" · ")}</div></div></button>`).join("")
       || `<div class="empty">Nothing here.</div>`;
   } catch (e) {
     grid.innerHTML = `<div class="error">${esc(e.message)}</div>`;

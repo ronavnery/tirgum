@@ -35,6 +35,11 @@ Authelia. (`TIRGUM_PASSWORD` adds the app's own password prompt, only for setups
 Videos, keys and feedback are kept in `./data`. Transcription uses RunPod (the server has no GPU);
 rendering uses the CPU.
 
+YouTube often blocks datacenter IPs (“Sign in to confirm you're not a bot”). Put a Netscape-format
+cookie file at `./data/youtube.cookies.txt` on the server (export from a logged-in browser session;
+refresh it when downloads start failing again). Optional override: `YTDLP_COOKIE_FILE=/path/to/cookies.txt`
+in `.env`. Check `/api/health` for `youtube_cookies: true` after deploy.
+
 ## Setup
 
 Requires `ffmpeg` and [`uv`](https://docs.astral.sh/uv/).

@@ -3,8 +3,10 @@ FROM python:3.12-slim
 
 # ffmpeg renders and scans video; Liberation Sans is metric-compatible with Arial for subtitles.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg fonts-liberation fontconfig ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends ffmpeg fonts-liberation fontconfig ca-certificates curl unzip \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
+ENV PATH="/usr/local/bin:${PATH}"
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app

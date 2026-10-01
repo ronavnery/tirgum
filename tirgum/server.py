@@ -147,7 +147,13 @@ def estimate(body: dict):
     try:
         est = p.estimate(body.get("url", ""), options_from(body.get("options")))
     except Exception as e:
-        raise HTTPException(400, f"Couldn't read that video: {str(e)[:200]}")
+        msg = str(e)[:200]
+        err = str(e).lower()
+        if p.youtube_cookie_file() and ("not a bot" in err or "no longer valid" in err):
+            msg += " YouTube cookies on the server expired — re-export from Chrome and replace data/youtube.cookies.txt."
+        elif "not a bot" in err:
+            msg += " Add data/youtube.cookies.txt on the server (see README)."
+        raise HTTPException(400, f"Couldn't read that video: {msg}")
     existing = folder_for(est["id"])
     est["existing"] = existing is not None and (existing / "video.en.mp4").exists()
     return est
@@ -312,7 +318,7 @@ def flat_list(url: str, limit: int = 60) -> list[dict]:
         return cached[1]
     import yt_dlp
 
-    opts = {"quiet": True, "no_warnings": True, "extract_flat": True, "playlistend": limit}
+    opts = p.ytdlp_opts(extract_flat=True, playlistend=limit)
     with yt_dlp.YoutubeDL(opts) as ydl:
         entries = ydl.extract_info(url, download=False).get("entries") or []
     _browse_cache[url] = (time.time(), entries)
@@ -331,6 +337,7 @@ def browse(channel: str = "kan11", kind: str = "videos", playlist: str = ""):
             return {"channel": name, "items": [i for i in items if i["playlist"]]}
         url = f"https://www.youtube.com/playlist?list={playlist}" if playlist else f"{base}/videos"
         items = [{"id": e.get("id"), "title": e.get("title"), "duration": e.get("duration"),
+                  "upload_date": e.get("upload_date"), "timestamp": e.get("timestamp"),
                   "url": f"https://www.youtube.com/watch?v={e.get('id')}",
                   "thumbnail": f"https://i.ytimg.com/vi/{e.get('id')}/mqdefault.jpg",
                   "in_library": e.get("id") in done} for e in flat_list(url)]
@@ -397,7 +404,9 @@ def test_settings():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "ffmpeg": bool(p.shutil.which("ffmpeg")), "data": str(p.DATA_DIR)}
+    cookies = p.youtube_cookie_file()
+    return {"ok": True, "ffmpeg": bool(p.shutil.which("ffmpeg")), "data": str(p.DATA_DIR),
+            "youtube_cookies": bool(cookies), "youtube_cookies_path": str(cookies) if cookies else None}
 
 
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="ui")

@@ -96,12 +96,35 @@ def read_srt(path: Path) -> list[Segment]:
 # ---------------------------------------------------------------------- download
 
 
+def youtube_cookie_file() -> Path | None:
+    """Netscape-format cookies for YouTube (needed on datacenter IPs). See README."""
+    override = os.environ.get("YTDLP_COOKIE_FILE", "").strip()
+    if override:
+        path = Path(override).expanduser()
+        return path if path.is_file() else None
+    default = DATA_DIR / "youtube.cookies.txt"
+    return default if default.is_file() else None
+
+
+def ytdlp_opts(**extra) -> dict:
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        # YouTube n-challenge (needs Deno + yt-dlp-ejs in Docker; see Dockerfile / pyproject).
+        "remote_components": {"ejs": ["github"]},
+        **extra,
+    }
+    if cookies := youtube_cookie_file():
+        opts["cookiefile"] = str(cookies)
+    return opts
+
+
 def download(url: str, out_root: Path, want_subs: bool) -> tuple[Path, Path | None, dict]:
     """Download the video (and any manual Hebrew subtitles). Returns (video, he_srt|None)."""
     import yt_dlp
 
-    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
+    with yt_dlp.YoutubeDL(ytdlp_opts()) as ydl:
+        info = ydl.extract_info(url, download=False, process=False)
     title = re.sub(r'[\\/:*?"<>|]+', "_", info.get("title") or "video").strip()[:80]
     work_dir = out_root / f"{title} [{info['id']}]"
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -130,6 +153,7 @@ def download(url: str, out_root: Path, want_subs: bool) -> tuple[Path, Path | No
         )
 
     print(f"⬇  Downloading: {info.get('title')}")
+    opts.update(ytdlp_opts())
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.download([url])
 
@@ -1213,33 +1237,37 @@ def write_ass(segments: list[Segment], path: Path, width: int, height: int,
             lines.append(f"Dialogue: 1,{start},{end},Text,,0,0,0,,"
                          f"{{\\pos({width // 2},{y + box_h // 2})}}{row}")
 
-    def hebrew_half(k: int) -> float:
-        """Half-width (from the centre) needed to cover segment k's Hebrew caption lines."""
-        return max((max(width / 2 - e[0] * width, e[1] * width - width / 2) + font * 0.15
-                    for e in (extents[k] if extents and k < len(extents) else []) if e), default=0)
+    def hebrew_half(k: int, line: int = 0) -> float:
+        """Half-width (from the centre) needed to cover one Hebrew caption line under segment k."""
+        if not extents or k >= len(extents):
+            return 0.0
+        es = extents[k]
+        if line >= len(es) or not es[line]:
+            return 0.0
+        e = es[line]
+        return max(width / 2 - e[0] * width, e[1] * width - width / 2) + font * 0.15
 
-    # Over the burned-in Hebrew captions: one steady band per stretch of dialogue, bridging short
-    # gaps, sized once for everything shown in that stretch, so the Hebrew never flashes through.
+    # Over burned-in Hebrew: one box per English line, as narrow as the text allows but still
+    # covering that line's Hebrew. (Avoid merging stretches — that kept a wide band for the whole
+    # dialogue even when each line was short.)
+    GAP_BRIDGE = 0.25  # seconds: extend a box slightly so Hebrew doesn't flash in tiny gaps
     flags = captioned if captioned and len(captioned) == len(segments) else [False] * len(segments)
     covered: set[int] = set()
-    k = 0
-    while k < len(segments):
+    for k, seg in enumerate(segments):
         if not flags[k]:
-            k += 1
             continue
-        members = [k]
-        while (members[-1] + 1 < len(segments) and flags[members[-1] + 1]
-               and segments[members[-1] + 1].start - segments[members[-1]].end < 1.5):
-            members.append(members[-1] + 1)
-        half = max(max((measure(r) / 2 + pad_x for m in members for r in rows_of(segments[m])), default=0),
-                   max(hebrew_half(m) for m in members))
-        n_rows = min(2, max(max(len(rows_of(segments[m])), len(extents[m]) if extents else 1)
-                            for m in members))
-        box(ts(segments[members[0]].start), ts(segments[members[-1]].end), half, n_rows)
-        for m in members:
-            text(ts(segments[m].start), ts(segments[m].end), rows_of(segments[m]))
-        covered.update(members)
-        k = members[-1] + 1
+        start, end = ts(seg.start), ts(seg.end)
+        if (k + 1 < len(segments) and flags[k + 1]
+                and 0 < segments[k + 1].start - seg.end < GAP_BRIDGE):
+            end = ts(segments[k + 1].start)
+        rows = rows_of(seg)
+        n_he = len(extents[k]) if extents and k < len(extents) else len(rows)
+        for j, row in enumerate(reversed(rows)):
+            line_i = min(len(rows) - 1 - j, max(n_he, 1) - 1)
+            half = max(measure(row) / 2 + pad_x, hebrew_half(k, line_i))
+            box(start, end, half, 1, j)
+        text(start, end, rows)
+        covered.add(k)
 
     # Elsewhere (speech without a Hebrew caption): a box per line, sized to its text.
     for k, seg in enumerate(segments):
@@ -1348,8 +1376,8 @@ def translate_model_for(opts: Options) -> str:
 def video_info(url: str) -> dict:
     import yt_dlp
 
-    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
+    with yt_dlp.YoutubeDL(ytdlp_opts(noplaylist=True)) as ydl:
+        info = ydl.extract_info(url, download=False, process=False)
     return {"id": info["id"], "title": info.get("title") or "video", "url": url,
             "duration": info.get("duration") or 0, "thumbnail": info.get("thumbnail") or "",
             "channel": info.get("channel") or info.get("uploader") or ""}
